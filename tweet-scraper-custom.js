@@ -25,9 +25,10 @@ async function fetchLatestTweet() {
         // Navigate to Twitter
         await page.goto(TWITTER_URL, { waitUntil: 'networkidle2' });
 
-        // Wait for the user name and tweet to load, give it more time
-        await page.waitForSelector('div[data-testid="UserName"]', { timeout: 20000 });  // Increased timeout
-        await page.waitForSelector('article[data-testid="tweet"]', { timeout: 20000 }); // Wait for tweets to appear
+        // Wait for the user name, profile picture, and tweet to load, give it more time
+        await page.waitForSelector('div[data-testid="UserName"]', { timeout: 30000 });  // Increased timeout
+        await page.waitForSelector('article[data-testid="tweet"]', { timeout: 30000 }); // Wait for tweets to appear
+        await page.waitForSelector('img[src*="pbs.twimg.com/media/"]', { timeout: 30000 }); // Wait for images
 
         // Scrape user display name and tweet data
         const tweetData = await page.evaluate(() => {
