@@ -2,7 +2,7 @@ const puppeteer = require('puppeteer');
 const axios = require('axios');
 const moment = require('moment'); // Import moment.js for formatting
 
-const WEBHOOK_URL = 'https://discord.com/api/webhooks/1336707950831472693/QbTu1wTQP0oRbKSJl86AkuPZ3pyHxYKGEhOd9K08eciLs4oIi4KdAFSpJEptFVqKr4mr';
+const WEBHOOK_URL = 'https://discord.com/api/webhooks/1335506156344446996/pMdyxSkm8YJsIOdvW1xwcv_habMu09G1LlnKd35I9GaKZrHtrYwZMWuhyWJtTbtkt-Ud';
 const TWITTER_URL = 'https://twitter.com/darksoulsgame';
 
 async function fetchLatestTweet() {
