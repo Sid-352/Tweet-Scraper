@@ -6,15 +6,10 @@ const WEBHOOK_URL = 'https://discord.com/api/webhooks/1335506156344446996/pMdyxS
 const TWITTER_HANDLE = process.env.TWITTER_HANDLE || 'darksoulsgame'; // Use env variable for custom handle
 const TWITTER_URL = `https://twitter.com/${TWITTER_HANDLE}`;
 
-// Function to format Twitter handle (proper case for name, uppercase for handle)
-function formatTwitterTitle(handle) {
-    // Split handle by capitalizing the name part (e.g., "eldenring" -> "Elden Ring")
-    const formattedName = handle
-        .replace(/([a-z])([A-Z])/g, '$1 $2') // Add a space between camel case
-        .replace(/\b\w/g, char => char.toUpperCase()); // Capitalize each word
+// Function to format Twitter title with actual name and handle
+function formatTwitterTitle(name, handle) {
     const formattedHandle = handle.toUpperCase(); // Capitalize the Twitter handle
-
-    return `${formattedName} • @${formattedHandle}`;
+    return `${name} • @${formattedHandle}`;
 }
 
 async function fetchLatestTweet() {
@@ -30,14 +25,14 @@ async function fetchLatestTweet() {
         // Navigate to Twitter
         await page.goto(TWITTER_URL, { waitUntil: 'networkidle2' });
 
-        // Wait for the first tweet to load
-        await page.waitForSelector('article[data-testid="tweet"]', { timeout: 10000 });
+        // Wait for the user name and tweet to load
+        await page.waitForSelector('div[data-testid="UserName"]', { timeout: 10000 });
 
-        // Manual delay to let images load properly
-        await new Promise(resolve => setTimeout(resolve, 3000));
-
-        // Scrape tweet data
+        // Scrape user display name and tweet data
         const tweetData = await page.evaluate(() => {
+            const userNameElement = document.querySelector('div[data-testid="UserName"] span');
+            const displayName = userNameElement ? userNameElement.innerText : null;
+
             const tweetElement = document.querySelector('article[data-testid="tweet"]');
             if (!tweetElement) return null;
 
@@ -58,7 +53,7 @@ async function fetchLatestTweet() {
             // Get profile picture (thumbnail)
             const profilePic = document.querySelector('img[src*="profile_images"]')?.src || null;
 
-            return { tweetText, tweetLink, tweetImage, profilePic };
+            return { displayName, tweetText, tweetLink, tweetImage, profilePic };
         });
 
         console.log('Extracted Tweet Data:', tweetData); // Debugging Output
@@ -82,12 +77,12 @@ async function sendToDiscord(tweet) {
     // Format timestamp as ISO (Discord requires this format)
     const formattedDate = moment().toISOString();
 
-    // Format title with Twitter handle and proper formatting
-    const formattedTitle = formatTwitterTitle(TWITTER_HANDLE);
+    // Format title with user's display name and Twitter handle
+    const formattedTitle = formatTwitterTitle(tweet.displayName || 'User', TWITTER_HANDLE);
 
     // Create embed object correctly
     const embed = {
-        title: formattedTitle, // Dynamic title with properly formatted handle
+        title: formattedTitle, // Dynamic title with display name and handle
         description: tweet.tweetText || 'No text available.',
         url: tweet.tweetLink || TWITTER_URL,
         color: 0x1da1f2, // Twitter blue
