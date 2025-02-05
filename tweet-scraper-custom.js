@@ -6,12 +6,6 @@ const WEBHOOK_URL = 'https://discord.com/api/webhooks/1335506156344446996/pMdyxS
 const TWITTER_HANDLE = process.env.TWITTER_HANDLE || 'darksoulsgame'; // Use env variable for custom handle
 const TWITTER_URL = `https://twitter.com/${TWITTER_HANDLE}`;
 
-// Function to format Twitter title with actual name and handle
-function formatTwitterTitle(name, handle) {
-    const formattedHandle = handle.toUpperCase(); // Capitalize the Twitter handle
-    return `${name} • @${formattedHandle}`;
-}
-
 async function fetchLatestTweet() {
     const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
     const page = await browser.newPage();
@@ -25,15 +19,21 @@ async function fetchLatestTweet() {
         // Navigate to Twitter
         await page.goto(TWITTER_URL, { waitUntil: 'networkidle2' });
 
-        // Wait for the user name and tweet to load, give it more time
-        await page.waitForSelector('div[data-testid="UserName"]', { timeout: 15000 });  // Increased timeout
-        await page.waitForSelector('article[data-testid="tweet"]', { timeout: 15000 }); // Wait for tweets to appear
+        // Wait for the profile data to load (to get the display name)
+        await page.waitForSelector('div[data-testid="UserProfileHeader_Items"]', { timeout: 10000 });
 
-        // Scrape user display name and tweet data
+        // Extract display name and handle
+        const userData = await page.evaluate(() => {
+            const displayName = document.querySelector('div[data-testid="UserProfileHeader_Items"] span')?.innerText || 'Unknown User';
+            const handle = document.querySelector('div[data-testid="UserProfileHeader_Items"] span[class*="username"]')?.innerText || 'No handle';
+            return { displayName, handle };
+        });
+
+        // Wait for the first tweet to load
+        await page.waitForSelector('article[data-testid="tweet"]', { timeout: 10000 });
+
+        // Scrape tweet data
         const tweetData = await page.evaluate(() => {
-            const userNameElement = document.querySelector('div[data-testid="UserName"] span');
-            const displayName = userNameElement ? userNameElement.innerText : null;
-
             const tweetElement = document.querySelector('article[data-testid="tweet"]');
             if (!tweetElement) return null;
 
@@ -54,11 +54,11 @@ async function fetchLatestTweet() {
             // Get profile picture (thumbnail)
             const profilePic = document.querySelector('img[src*="profile_images"]')?.src || null;
 
-            return { displayName, tweetText, tweetLink, tweetImage, profilePic };
+            return { tweetText, tweetLink, tweetImage, profilePic };
         });
 
         console.log('Extracted Tweet Data:', tweetData); // Debugging Output
-        return tweetData;
+        return { tweetData, userData };
     } catch (error) {
         console.error('Error fetching tweet:', error.message);
         return null;
@@ -67,38 +67,39 @@ async function fetchLatestTweet() {
     }
 }
 
-async function sendToDiscord(tweet) {
+async function sendToDiscord(tweet, userData) {
     if (!tweet) {
         console.log('No tweet found.');
         return;
     }
 
-    console.log('Sending Tweet to Discord:', tweet); // Debugging Output
+    console.log('Sending Tweet to Discord:', tweet);
 
     // Format timestamp as ISO (Discord requires this format)
     const formattedDate = moment().toISOString();
 
-    // Format title with user's display name and Twitter handle
-    const formattedTitle = formatTwitterTitle(tweet.displayName || 'User', TWITTER_HANDLE);
+    // Debugging: Log image URLs to check if they are correct
+    console.log("Tweet Image URL:", tweet.tweetImage);
+    console.log("Profile Picture URL:", tweet.profilePic);
 
-    // Create embed object correctly
+    // Create embed object
     const embed = {
-        title: formattedTitle, // Dynamic title with display name and handle
+        title: `${userData.displayName}  •  @${userData.handle}`, // Use the display name and handle dynamically
         description: tweet.tweetText || 'No text available.',
         url: tweet.tweetLink || TWITTER_URL,
-        color: 0x1da1f2, // Twitter blue
+        color: 0x1da1f2,
         footer: {
-            text: 'X', // Updated footer from "Twitter Scraper Bot" to "X"
+            text: 'X',
         },
-        timestamp: formattedDate, // ISO format timestamp
+        timestamp: formattedDate,
     };
 
-    // Attach main image if available
+    // Attach tweet image if available
     if (tweet.tweetImage) {
         embed.image = { url: tweet.tweetImage };
     }
 
-    // Attach profile picture as a thumbnail
+    // Attach profile picture as a thumbnail if available
     if (tweet.profilePic) {
         embed.thumbnail = { url: tweet.profilePic };
     }
@@ -120,6 +121,6 @@ async function sendToDiscord(tweet) {
 
 // Run the script
 (async () => {
-    const latestTweet = await fetchLatestTweet();
-    await sendToDiscord(latestTweet);
+    const { tweetData, userData } = await fetchLatestTweet();
+    await sendToDiscord(tweetData, userData);
 })();
