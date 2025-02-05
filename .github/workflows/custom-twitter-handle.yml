@@ -1,0 +1,29 @@
+name: Fetch Latest Tweet from Custom Twitter Handle
+
+on:
+  workflow_dispatch:
+    inputs:
+      twitter_handle:
+        description: 'Enter Twitter handle (without @)'
+        required: true
+        default: 'darksoulsgame'
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run tweet scraper with custom Twitter handle
+        env:
+          TWITTER_HANDLE: ${{ github.event.inputs.twitter_handle }}  # Pass Twitter handle as an env variable
+        run: node tweet-scraper-custom.js
