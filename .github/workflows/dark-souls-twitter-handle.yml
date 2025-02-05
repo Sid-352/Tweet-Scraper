@@ -1,4 +1,4 @@
-name: Run Tweet Scraper Manually
+name: Fetch Latest Tweet from @DarkSoulsGame
 
 on:
   workflow_dispatch:  # Allows manual execution
@@ -19,4 +19,4 @@ jobs:
         run: npm install puppeteer axios moment
 
       - name: Run script
-        run: node tweet-scraper.js
+        run: node tweet-scraper-dark-souls.js
