@@ -2,9 +2,20 @@ const puppeteer = require('puppeteer');
 const axios = require('axios');
 const moment = require('moment'); // Import moment.js for formatting
 
-const WEBHOOK_URL = 'https://discord.com/api/webhooks/1335506156344446996/pMdyxSkm8YJsIOdvW1xwcv_habMu09G1LlnKd35I9GaKZrHtrYwZMWuhyWJtTbtkt-Ud'; 
+const WEBHOOK_URL = 'https://discord.com/api/webhooks/1335506156344446996/pMdyxSkm8YJsIOdvW1xwcv_habMu09G1LlnKd35I9GaKZrHtrYwZMWuhyWJtTbtkt-Ud';  
 const TWITTER_HANDLE = process.env.TWITTER_HANDLE || 'darksoulsgame'; // Use env variable for custom handle
 const TWITTER_URL = `https://twitter.com/${TWITTER_HANDLE}`;
+
+// Function to format Twitter handle (proper case for name, uppercase for handle)
+function formatTwitterTitle(handle) {
+    // Split handle by capitalizing the name part (e.g., "eldenring" -> "Elden Ring")
+    const formattedName = handle
+        .replace(/([a-z])([A-Z])/g, '$1 $2') // Add a space between camel case
+        .replace(/\b\w/g, char => char.toUpperCase()); // Capitalize each word
+    const formattedHandle = handle.toUpperCase(); // Capitalize the Twitter handle
+
+    return `${formattedName} • @${formattedHandle}`;
+}
 
 async function fetchLatestTweet() {
     const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
@@ -71,9 +82,12 @@ async function sendToDiscord(tweet) {
     // Format timestamp as ISO (Discord requires this format)
     const formattedDate = moment().toISOString();
 
+    // Format title with Twitter handle and proper formatting
+    const formattedTitle = formatTwitterTitle(TWITTER_HANDLE);
+
     // Create embed object correctly
     const embed = {
-        title: `${TWITTER_HANDLE}  •  @${TWITTER_HANDLE}`, // Dynamic title
+        title: formattedTitle, // Dynamic title with properly formatted handle
         description: tweet.tweetText || 'No text available.',
         url: tweet.tweetLink || TWITTER_URL,
         color: 0x1da1f2, // Twitter blue
