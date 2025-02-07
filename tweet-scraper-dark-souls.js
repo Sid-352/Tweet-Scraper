@@ -20,7 +20,7 @@ async function fetchLatestTweet() {
         const latestTabSelector = 'a[aria-label="Latest"]';
         if (await page.$(latestTabSelector)) {
             await page.click(latestTabSelector);
-            await page.waitForTimeout(5000); // Wait for page refresh
+            await new Promise(resolve => setTimeout(resolve, 5000)); // Fix wait
         }
 
         await page.waitForSelector('article[data-testid="tweet"]', { timeout: 15000 });
@@ -28,11 +28,11 @@ async function fetchLatestTweet() {
         // Scroll multiple times to load more tweets
         for (let i = 0; i < 5; i++) {
             await page.evaluate(() => window.scrollBy(0, window.innerHeight));
-            await page.waitForTimeout(3000);
+            await new Promise(resolve => setTimeout(resolve, 3000)); // Fix wait
         }
 
         // Extra wait for images and elements to fully load
-        await new Promise(resolve => setTimeout(resolve, 5000));
+        await new Promise(resolve => setTimeout(resolve, 5000)); // Fix wait
 
         // Scrape all tweets
         const tweetData = await page.evaluate(() => {
