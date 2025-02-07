@@ -13,51 +13,53 @@ async function fetchLatestTweet() {
     const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
     const page = await browser.newPage();
 
-    // Spoof a user-agent to bypass bot detection
     await page.setUserAgent(
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'
     );
 
     try {
-        // Navigate to Twitter
         await page.goto(TWITTER_URL, { waitUntil: 'networkidle2' });
-
-        // Wait for tweets to load
         await page.waitForSelector('article[data-testid="tweet"]', { timeout: 15000 });
 
-        // Extra delay to let images load
-        await new Promise(resolve => setTimeout(resolve, 5000));
+        // Wait extra time for images and elements to load
+        await new Promise(resolve => setTimeout(resolve, 4000));
 
-        // Scrape tweet data
-        const tweetData = await page.evaluate((TARGET_HASHTAGS) => {
-            const tweetElement = document.querySelector('article[data-testid="tweet"]');
-            if (!tweetElement) return null;
+        // Scrape multiple tweets
+        const tweets = await page.evaluate(() => {
+            const tweetElements = document.querySelectorAll('article[data-testid="tweet"]');
+            const hashtagsToFind = ['#DarkSoulsRemastered', '#DarkSouls', '#DarkSouls2', '#DarkSouls3'];
 
-            const tweetText = tweetElement.querySelector('div[lang]')?.innerText.trim() || 'No text found.';
-            const tweetLink =
-                'https://twitter.com' +
-                tweetElement.querySelector('a[href*="/status/"]')?.getAttribute('href') ||
-                null;
+            let matchingTweet = null;
 
-            // Get all attached images (ignoring profile pictures)
-            const tweetImages = Array.from(
-                tweetElement.querySelectorAll('img[src*="pbs.twimg.com/media/"]')
-            ).map(img => img.src);
+            tweetElements.forEach(tweet => {
+                const tweetTextElement = tweet.querySelector('div[lang]');
+                if (!tweetTextElement) return;
 
-            // Use the first image (or null if none)
-            const tweetImage = tweetImages.length > 0 ? tweetImages[0] : null;
+                const tweetText = tweetTextElement.innerText.trim();
+                
+                // Check if tweet contains any of the specified hashtags
+                if (hashtagsToFind.some(tag => tweetText.includes(tag))) {
+                    const tweetLink =
+                        'https://twitter.com' +
+                        tweet.querySelector('a[href*="/status/"]')?.getAttribute('href') ||
+                        null;
 
-            // Get profile picture (thumbnail)
-            const profilePic = document.querySelector('img[src*="profile_images"]')?.src || null;
+                    const tweetImages = Array.from(
+                        tweet.querySelectorAll('img[src*="pbs.twimg.com/media/"]')
+                    ).map(img => img.src);
 
-            // Check if tweet contains any of the target hashtags
-            const containsHashtag = TARGET_HASHTAGS.some(tag => tweetText.includes(tag));
+                    const tweetImage = tweetImages.length > 0 ? tweetImages[0] : null;
+                    const profilePic = document.querySelector('img[src*="profile_images"]')?.src || null;
 
-            return containsHashtag ? { tweetText, tweetLink, tweetImage, profilePic } : null;
-        }, TARGET_HASHTAGS);
+                    matchingTweet = { tweetText, tweetLink, tweetImage, profilePic };
+                }
+            });
 
-        console.log('Extracted Tweet Data:', tweetData || 'No matching tweet found.');
-        return tweetData;
+            return matchingTweet;
+        });
+
+        console.log('Extracted Tweet Data:', tweets || 'No matching tweet found.');
+        return tweets;
     } catch (error) {
         console.error('Error fetching tweet:', error.message);
         return null;
