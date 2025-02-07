@@ -23,7 +23,7 @@ async function fetchLatestTweet() {
     try {
         await page.goto(TWITTER_URL, { waitUntil: 'networkidle2', timeout: 60000 });
 
-        await page.waitForTimeout(5000); // Extra wait for stability
+        await new Promise(resolve => setTimeout(resolve, 5000)); // Extra wait for stability
         await page.waitForSelector('div[data-testid="UserName"] span', { timeout: 60000 });
 
         const tweetData = await page.evaluate(() => {
