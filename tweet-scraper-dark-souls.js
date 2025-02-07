@@ -19,24 +19,48 @@ async function fetchLatestTweet() {
 
     try {
         await page.goto(TWITTER_URL, { waitUntil: 'networkidle2' });
+
+        // Click "Latest" tab if available (ensures recent tweets are fetched)
+        const latestTabSelector = 'a[aria-label="Latest"]';
+        if (await page.$(latestTabSelector)) {
+            await page.click(latestTabSelector);
+            await page.waitForTimeout(3000); // Let page refresh
+        }
+
         await page.waitForSelector('article[data-testid="tweet"]', { timeout: 15000 });
 
-        // Wait extra time for images and elements to load
+        // Extra wait time for images and elements to load
         await new Promise(resolve => setTimeout(resolve, 4000));
 
         // Scrape multiple tweets
         const tweets = await page.evaluate(() => {
             const tweetElements = document.querySelectorAll('article[data-testid="tweet"]');
             const hashtagsToFind = ['#DarkSoulsRemastered', '#DarkSouls', '#DarkSouls2', '#DarkSouls3'];
-
             let matchingTweet = null;
+            let tweetCount = 0;
 
-            tweetElements.forEach(tweet => {
+            for (let tweet of tweetElements) {
+                if (tweetCount >= 10) break; // Only check the first 10 tweets (for experimentation)
+                tweetCount++;
+
                 const tweetTextElement = tweet.querySelector('div[lang]');
-                if (!tweetTextElement) return;
+                if (!tweetTextElement) continue;
 
                 const tweetText = tweetTextElement.innerText.trim();
-                
+
+                // Extract the tweet's timestamp (absolute time)
+                const timeElement = tweet.querySelector('time');
+                const tweetTime = timeElement ? new Date(timeElement.getAttribute('datetime')) : null;
+                const now = new Date();
+
+                // Only consider tweets from the last 30 days
+                const thirtyDaysAgo = new Date();
+                thirtyDaysAgo.setDate(now.getDate() - 30);
+
+                if (!tweetTime || tweetTime < thirtyDaysAgo) {
+                    continue; // Skip tweets older than 30 days
+                }
+
                 // Check if tweet contains any of the specified hashtags
                 if (hashtagsToFind.some(tag => tweetText.includes(tag))) {
                     const tweetLink =
@@ -51,9 +75,10 @@ async function fetchLatestTweet() {
                     const tweetImage = tweetImages.length > 0 ? tweetImages[0] : null;
                     const profilePic = document.querySelector('img[src*="profile_images"]')?.src || null;
 
-                    matchingTweet = { tweetText, tweetLink, tweetImage, profilePic };
+                    matchingTweet = { tweetText, tweetLink, tweetImage, profilePic, tweetTime };
+                    break; // Stop searching once we find a match
                 }
-            });
+            }
 
             return matchingTweet;
         });
