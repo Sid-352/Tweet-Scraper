@@ -16,7 +16,10 @@ jobs:
           node-version: 18
 
       - name: Install dependencies
-        run: npm install puppeteer axios moment
+        run: npm ci  # Ensures a clean and fast installation
 
       - name: Run script
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: "false"  # Ensures Puppeteer works in CI
         run: node tweet-scraper-dark-souls.js
