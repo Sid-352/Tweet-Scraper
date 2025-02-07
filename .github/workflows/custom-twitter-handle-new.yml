@@ -21,9 +21,9 @@ jobs:
           node-version: 20
           cache: "npm"
 
-      - name: Install dependencies
-        run: npm install
-        
+      - name: Install Dependencies
+        run: npm install puppeteer-extra puppeteer-extra-plugin-stealth puppeteer axios moment
+
       - name: Install Puppeteer Dependencies (Linux)
         run: sudo apt-get update && sudo apt-get install -y libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libxkbcommon-x11-0
 
