@@ -2,12 +2,8 @@ const puppeteer = require('puppeteer');
 const axios = require('axios');
 const moment = require('moment');
 
-// Use GitHub secret for Discord Webhook URL
 const WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
 const TWITTER_URL = 'https://twitter.com/darksoulsgame';
-
-// List of hashtags to filter for
-const TARGET_HASHTAGS = ['#DarkSoulsRemastered', '#DarkSouls', '#DarkSouls2', '#DarkSouls3'];
 
 async function fetchLatestTweet() {
     const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
@@ -20,71 +16,62 @@ async function fetchLatestTweet() {
     try {
         await page.goto(TWITTER_URL, { waitUntil: 'networkidle2' });
 
-        // Click "Latest" tab if available (ensures recent tweets are fetched)
+        // Ensure we are on the "Latest" tab
         const latestTabSelector = 'a[aria-label="Latest"]';
         if (await page.$(latestTabSelector)) {
             await page.click(latestTabSelector);
-            await page.waitForTimeout(3000); // Let page refresh
+            await page.waitForTimeout(5000); // Wait for page refresh
         }
 
         await page.waitForSelector('article[data-testid="tweet"]', { timeout: 15000 });
 
-        // Extra wait time for images and elements to load
-        await new Promise(resolve => setTimeout(resolve, 4000));
+        // Scroll multiple times to load more tweets
+        for (let i = 0; i < 5; i++) {
+            await page.evaluate(() => window.scrollBy(0, window.innerHeight));
+            await page.waitForTimeout(3000);
+        }
 
-        // Scrape multiple tweets
-        const tweets = await page.evaluate(() => {
+        // Extra wait for images and elements to fully load
+        await new Promise(resolve => setTimeout(resolve, 5000));
+
+        // Scrape all tweets
+        const tweetData = await page.evaluate(() => {
             const tweetElements = document.querySelectorAll('article[data-testid="tweet"]');
             const hashtagsToFind = ['#DarkSoulsRemastered', '#DarkSouls', '#DarkSouls2', '#DarkSouls3'];
             let matchingTweet = null;
-            let tweetCount = 0;
+
+            const now = new Date();
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(now.getDate() - 30);
 
             for (let tweet of tweetElements) {
-                if (tweetCount >= 10) break; // Only check the first 10 tweets (for experimentation)
-                tweetCount++;
-
-                const tweetTextElement = tweet.querySelector('div[lang]');
-                if (!tweetTextElement) continue;
-
-                const tweetText = tweetTextElement.innerText.trim();
-
-                // Extract the tweet's timestamp (absolute time)
+                const tweetText = tweet.querySelector('div[lang]')?.innerText.trim() || '';
+                const tweetLink = 'https://twitter.com' + (tweet.querySelector('a[href*="/status/"]')?.getAttribute('href') || '');
+                
+                // Extract timestamp
                 const timeElement = tweet.querySelector('time');
-                const tweetTime = timeElement ? new Date(timeElement.getAttribute('datetime')) : null;
-                const now = new Date();
+                if (!timeElement) continue;
 
-                // Only consider tweets from the last 30 days
-                const thirtyDaysAgo = new Date();
-                thirtyDaysAgo.setDate(now.getDate() - 30);
+                const tweetDate = new Date(timeElement.getAttribute('datetime'));
+                if (tweetDate < thirtyDaysAgo) continue; // Skip old tweets
 
-                if (!tweetTime || tweetTime < thirtyDaysAgo) {
-                    continue; // Skip tweets older than 30 days
-                }
-
-                // Check if tweet contains any of the specified hashtags
+                // Check if tweet contains any of the hashtags
                 if (hashtagsToFind.some(tag => tweetText.includes(tag))) {
-                    const tweetLink =
-                        'https://twitter.com' +
-                        tweet.querySelector('a[href*="/status/"]')?.getAttribute('href') ||
-                        null;
-
-                    const tweetImages = Array.from(
-                        tweet.querySelectorAll('img[src*="pbs.twimg.com/media/"]')
-                    ).map(img => img.src);
-
+                    const tweetImages = Array.from(tweet.querySelectorAll('img[src*="pbs.twimg.com/media/"]'))
+                        .map(img => img.src);
                     const tweetImage = tweetImages.length > 0 ? tweetImages[0] : null;
                     const profilePic = document.querySelector('img[src*="profile_images"]')?.src || null;
 
-                    matchingTweet = { tweetText, tweetLink, tweetImage, profilePic, tweetTime };
-                    break; // Stop searching once we find a match
+                    matchingTweet = { tweetText, tweetLink, tweetImage, profilePic };
+                    break; // Stop after finding the first valid tweet
                 }
             }
 
             return matchingTweet;
         });
 
-        console.log('Extracted Tweet Data:', tweets || 'No matching tweet found.');
-        return tweets;
+        console.log('Extracted Tweet Data:', tweetData);
+        return tweetData;
     } catch (error) {
         console.error('Error fetching tweet:', error.message);
         return null;
@@ -95,31 +82,26 @@ async function fetchLatestTweet() {
 
 async function sendToDiscord(tweet) {
     if (!tweet) {
-        console.log('No matching tweet found with the specified hashtags.');
+        console.log('No matching tweet found.');
         return;
     }
 
     console.log('Sending Tweet to Discord:', tweet);
 
-    // Format timestamp as ISO (Discord requires this format)
     const formattedDate = moment().toISOString();
 
-    // Create embed object
     const embed = {
         title: 'Dark Souls  •  @DarkSoulsGame',
         description: tweet.tweetText || 'No text available.',
         url: tweet.tweetLink || TWITTER_URL,
-        color: 0x1da1f2, // Twitter blue
+        color: 0x1da1f2,
         footer: { text: 'X' },
         timestamp: formattedDate,
     };
 
-    // Attach main image if available
     if (tweet.tweetImage) {
         embed.image = { url: tweet.tweetImage };
     }
-
-    // Attach profile picture as a thumbnail
     if (tweet.profilePic) {
         embed.thumbnail = { url: tweet.profilePic };
     }
@@ -127,14 +109,10 @@ async function sendToDiscord(tweet) {
     const payload = { embeds: [embed] };
 
     try {
-        const response = await axios.post(WEBHOOK_URL, payload, {
-            headers: { 'Content-Type': 'application/json' }
-        });
-
-        console.log('Tweet sent to Discord successfully!', response.data);
+        await axios.post(WEBHOOK_URL, payload, { headers: { 'Content-Type': 'application/json' } });
+        console.log('Tweet sent to Discord successfully!');
     } catch (error) {
         console.error('Error sending webhook:', error.response?.data || error.message);
-        console.log('Payload Sent:', JSON.stringify(payload, null, 2));
     }
 }
 
