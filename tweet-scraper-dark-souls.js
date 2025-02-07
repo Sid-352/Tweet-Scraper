@@ -1,9 +1,13 @@
 const puppeteer = require('puppeteer');
 const axios = require('axios');
-const moment = require('moment'); // Import moment.js for formatting
+const moment = require('moment');
 
-const WEBHOOK_URL = 'https://discord.com/api/webhooks/1335506156344446996/pMdyxSkm8YJsIOdvW1xwcv_habMu09G1LlnKd35I9GaKZrHtrYwZMWuhyWJtTbtkt-Ud';
+// Use GitHub secret for Discord Webhook URL
+const WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
 const TWITTER_URL = 'https://twitter.com/darksoulsgame';
+
+// List of hashtags to filter for
+const TARGET_HASHTAGS = ['#DarkSoulsRemastered', '#DarkSouls', '#DarkSouls2', '#DarkSouls3'];
 
 async function fetchLatestTweet() {
     const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
@@ -18,14 +22,14 @@ async function fetchLatestTweet() {
         // Navigate to Twitter
         await page.goto(TWITTER_URL, { waitUntil: 'networkidle2' });
 
-        // Wait for the first tweet to load
-        await page.waitForSelector('article[data-testid="tweet"]', { timeout: 10000 });
+        // Wait for tweets to load
+        await page.waitForSelector('article[data-testid="tweet"]', { timeout: 15000 });
 
-        // Manual delay to let images load properly
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        // Extra delay to let images load
+        await new Promise(resolve => setTimeout(resolve, 5000));
 
         // Scrape tweet data
-        const tweetData = await page.evaluate(() => {
+        const tweetData = await page.evaluate((TARGET_HASHTAGS) => {
             const tweetElement = document.querySelector('article[data-testid="tweet"]');
             if (!tweetElement) return null;
 
@@ -46,10 +50,13 @@ async function fetchLatestTweet() {
             // Get profile picture (thumbnail)
             const profilePic = document.querySelector('img[src*="profile_images"]')?.src || null;
 
-            return { tweetText, tweetLink, tweetImage, profilePic };
-        });
+            // Check if tweet contains any of the target hashtags
+            const containsHashtag = TARGET_HASHTAGS.some(tag => tweetText.includes(tag));
 
-        console.log('Extracted Tweet Data:', tweetData); // Debugging Output
+            return containsHashtag ? { tweetText, tweetLink, tweetImage, profilePic } : null;
+        }, TARGET_HASHTAGS);
+
+        console.log('Extracted Tweet Data:', tweetData || 'No matching tweet found.');
         return tweetData;
     } catch (error) {
         console.error('Error fetching tweet:', error.message);
@@ -61,25 +68,23 @@ async function fetchLatestTweet() {
 
 async function sendToDiscord(tweet) {
     if (!tweet) {
-        console.log('No tweet found.');
+        console.log('No matching tweet found with the specified hashtags.');
         return;
     }
 
-    console.log('Sending Tweet to Discord:', tweet); // Debugging Output
+    console.log('Sending Tweet to Discord:', tweet);
 
     // Format timestamp as ISO (Discord requires this format)
     const formattedDate = moment().toISOString();
 
-    // Create embed object correctly
+    // Create embed object
     const embed = {
-        title: 'Dark Souls  •  @DarkSoulsGame', // Twitter handle in title
+        title: 'Dark Souls  •  @DarkSoulsGame',
         description: tweet.tweetText || 'No text available.',
         url: tweet.tweetLink || TWITTER_URL,
         color: 0x1da1f2, // Twitter blue
-        footer: {
-            text: 'X', // Updated footer from "Twitter Scraper Bot" to "X"
-        },
-        timestamp: formattedDate, // ISO format timestamp
+        footer: { text: 'X' },
+        timestamp: formattedDate,
     };
 
     // Attach main image if available
@@ -92,7 +97,6 @@ async function sendToDiscord(tweet) {
         embed.thumbnail = { url: tweet.profilePic };
     }
 
-    // Ensure Discord API accepts the payload
     const payload = { embeds: [embed] };
 
     try {
@@ -103,7 +107,7 @@ async function sendToDiscord(tweet) {
         console.log('Tweet sent to Discord successfully!', response.data);
     } catch (error) {
         console.error('Error sending webhook:', error.response?.data || error.message);
-        console.log('Payload Sent:', JSON.stringify(payload, null, 2)); // Log payload for debugging
+        console.log('Payload Sent:', JSON.stringify(payload, null, 2));
     }
 }
 
