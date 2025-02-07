@@ -2,7 +2,7 @@ const puppeteer = require('puppeteer');
 const axios = require('axios');
 const moment = require('moment'); // Import moment.js for formatting
 
-const WEBHOOK_URL = 'https://discord.com/api/webhooks/1335506156344446996/pMdyxSkm8YJsIOdvW1xwcv_habMu09G1LlnKd35I9GaKZrHtrYwZMWuhyWJtTbtkt-Ud';  
+const WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;  
 const TWITTER_HANDLE = process.env.TWITTER_HANDLE || 'darksoulsgame'; // Use env variable for custom handle
 const TWITTER_URL = `https://twitter.com/${TWITTER_HANDLE}`;
 
