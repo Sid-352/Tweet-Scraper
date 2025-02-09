@@ -33,6 +33,11 @@ Run the script to start scraping the latest tweet and sending it to the Discord 
   node tweet_scraper.js
   ```
 
+## Using the code with another handle
+If you want to use the code with another twitter handle (e.g. ``@ELDENRING``), you need to modify the code to some degree. Replace the Twitter Handle on ``line 7`` of the code with one of your choosing, or the code can be modified to take an input from the user.
+
+The difficult part comes with Twitter usernames, a pre-defined name was used in this code on ``line 89``, which can be replaced with a generic title, or if possible a block of code to efficiently extract the Twitter username.
+
 ## GitHub Actions
 There is also a manual GitHub Action setup to run the script.
 
@@ -41,8 +46,3 @@ The workflow file is located at ```.github/workflows/tweet_scraper.yml``` which 
 
 ### Running the Workflow
 Go in Actions Tab, In the Actions sidebar find the correct workflow name, ``Fetch Latest Tweet from @DarkSoulsGame`` in this case, click on it and then click on the ``Run Workflow`` option. 
-
-## Using the code with another handle
-If you want to use the code with another twitter handle (e.g. ``@ELDENRING``), you need to modify the code to some degree. Replace the Twitter Handle on ``line 7`` of the code with one of your choosing, or the code can be modified to take an input from the user.
-
-The difficult part comes with Twitter usernames, a pre-defined name was used in this code on ``line 89``, which can be replaced with a generic title, or if possible a block of code to efficiently extract the Twitter username.
