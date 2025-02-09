@@ -22,4 +22,4 @@ jobs:
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: "false"  # Ensures Puppeteer works in CI
-        run: node tweet-scraper-dark-souls.js
+        run: node tweet_scraper.js
