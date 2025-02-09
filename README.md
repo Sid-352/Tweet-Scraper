@@ -1,13 +1,13 @@
-# Dark-Souls-Tweet-scraper
+# Tweet-Scraper
 ![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-yellow.svg)
 
 ## Overview
-Dark-Souls-Tweet-scraper is a Node.js application designed to scrape the latest tweet from the `@DarkSoulsgame` Twitter handle and send it to a specified Discord webhook as an embed message.
+Tweet-Scraper is a Node.js application designed to scrape the latest tweet from the `@DarkSoulsgame` Twitter handle and send it to a specified Discord webhook as an embed message.
 
 ## Features
 - Scrapes the latest tweet from the `@DarkSoulsgame` Twitter handle.
 - Sends the tweet to a configured Discord webhook.
-- Automatically attaches images and profile pictures to the Discord embed.
+- Automatically attaches images and profile pictures to the Discord embed alongside addtional information in the Footer.
 
 ## Installation
 1. Clone the repository:
