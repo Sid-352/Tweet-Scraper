@@ -1,3 +1,43 @@
-# Tweet-scraper
+# Dark-Souls-Tweet-scraper
+![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-yellow.svg)
 
-Does what it says, currently only works for a hard defined twitter handle, in my case '@DarkSoulsgame'. It fetches the latest tweet and sends it back to the webhook with a POST based embed request, in around 25 to 40 seconds.
+## Overview
+Dark-Souls-Tweet-scraper is a Node.js application designed to scrape the latest tweet from the `@DarkSoulsgame` Twitter handle and send it to a specified Discord webhook as an embed message.
+
+## Features
+- Scrapes the latest tweet from the `@DarkSoulsgame` Twitter handle.
+- Sends the tweet to a configured Discord webhook.
+- Automatically attaches images and profile pictures to the Discord embed.
+
+## Installation
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/Sid-352/Dark-Souls-Tweet-scraper.git
+   cd Dark-Souls-Tweet-scraper
+   ```
+
+2. Install the required dependencies:
+   ```bash
+   npm install
+   ```
+
+## Configuration
+Set up your environment variables by creating a ``.env`` file in the root directory and adding your Discord webhook URL:
+   ```env
+   DISCORD_WEBHOOK_URL=YOUR_DISCORD_WEBHOOK_URL
+   ```
+
+## Usage
+Run the script to start scraping the latest tweet and sending it to the Discord webhook:
+  ```bash
+  node tweet_scraper.js
+  ```
+
+## GitHub Actions
+There is also a manual GitHub Action setup to run the script.
+
+### Create or modify the existing Workflow
+The workflow file is located at ```.github/workflows/tweet_scraper.yml``` which can accessed by clicking [here](.github/workflows/tweet_scraper.yml).
+
+### Running the Workflow
+Go in Actions Tab, In the Actions sidebar find the correct workflow name, ``Fetch Latest Tweet from @DarkSoulsGame`` in this case, click on it and then click on the ``Run Workflow`` option. 
