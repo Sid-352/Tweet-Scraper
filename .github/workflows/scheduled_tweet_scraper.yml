@@ -1,0 +1,27 @@
+name: Fetch Latest Tweet from @DarkSoulsGame automatically every 12 hours
+
+on:
+  schedule:
+    - cron: '0 */12 * * *'  # Runs every 12 hours
+  workflow_dispatch:  # Allows manual execution
+
+jobs:
+  run-new-script:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run New Tweet Checker Script
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: "false"
+        run: node scheduled_tweet_scraper.js
