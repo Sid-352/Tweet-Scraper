@@ -22,6 +22,6 @@ jobs:
 
       - name: Run New Tweet Checker Script
         env:
-          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.NEW_DISCORD_WEBHOOK_URL }}
           PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: "false"
         run: node scheduled_tweet_scraper.js
