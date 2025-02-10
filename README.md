@@ -42,7 +42,12 @@ The difficult part comes with Twitter usernames, a pre-defined name was used in 
 There is also a manual GitHub Action setup to run the script.
 
 ### Create or modify the existing Workflow
-The workflow file is located at ```.github/workflows/tweet_scraper.yml``` which can accessed by clicking [here](.github/workflows/tweet_scraper.yml).
+The workflow file is located at ```.github/workflows/tweet_scraper.yml``` which can accessed by clicking [here](.github/workflows/manual_tweet_scraper.yml).
 
 ### Running the Workflow
 Go in Actions Tab, In the Actions sidebar find the correct workflow name, ``Fetch Latest Tweet from @DarkSoulsGame`` in this case, click on it and then click on the ``Run Workflow`` option. 
+
+### Automatic Scheduled Script
+The New Script located in ``/Scheduled Scraper`` folder is able to automatically extract and post the tweets every 12 hours via a cron job defined in this file [here](.github/workflows/scheduled_tweet_scraper.yml). It also has an additional feature, it is able to ignore repeated tweets and keeps rechecking after every 12 hours until a new tweet is found after comparison. 
+
+For more additions, you can modify the script to clear the old logs every 30 days, but because the handle im targetting is very infrequent in posting such information, I do not have a requirement to do so.
