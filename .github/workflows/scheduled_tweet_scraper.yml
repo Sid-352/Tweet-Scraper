@@ -24,4 +24,4 @@ jobs:
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.NEW_DISCORD_WEBHOOK_URL }}
           PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: "false"
-        run: node scheduled_tweet_scraper.js
+        run: node "Scheduled Scraper/scheduled_tweet_scraper.js"
